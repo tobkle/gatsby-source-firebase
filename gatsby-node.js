@@ -1,64 +1,98 @@
-const firebase = require("firebase-admin")
-const crypto = require("crypto")
+const firebase = require('firebase-admin')
+const crypto = require('crypto')
 
 exports.sourceNodes = (
   { boundActionCreators },
-  { credential, databaseURL, types, quiet = false },
+  {
+    credential,
+    databaseURL,
+    contentTypes = 'contentTypes',
+    contents = 'contents',
+    limit = 100,
+    types,
+    quiet = false,
+  },
   done
 ) => {
   const { createNode } = boundActionCreators
 
   firebase.initializeApp({
     credential: firebase.credential.cert(credential),
-    databaseURL: databaseURL
+    databaseURL: databaseURL,
   })
 
   const db = firebase.database()
-
   const start = Date.now()
 
-  types.forEach(
-    ({ query = ref => ref, map = node => node, type, path }) => {
-      if (!quiet) {
-        console.log(`\n[Firebase Source] Fetching data for ${type}...`)
-      }
+  // reading Content Types first
+  const ref = db.ref(contentTypes)
+  ref.once('value').then((snapshot) => {
+    const keys = []
+    const data = [] // store data in array so it's ordered
 
-      query(db.ref(path)).once("value", snapshot => {
+    snapshot.forEach((ss) => {
+      data.push({ ...ss.val(), uid: ss.key })
+      keys.push(ss.key)
+    })
+
+    data.map((contentType) => {
+      console.log('Found content type:', contentType.name, contentType.uid)
+
+      types.push({
+        type: `${contentType.name}`,
+        path: `/${contents}/${contentType.uid}`,
+        query: (ref) => ref.limitToLast(limit),
+        map: (node) => {
+          return node
+        },
+      })
+
+      console.log(JSON.stringify(types, null, 2))
+    })
+
+    types.forEach(
+      ({ query = (ref) => ref, map = (node) => node, type, path }) => {
         if (!quiet) {
-          console.log(
-            `\n[Firebase Source] Data for ${type} loaded in`,
-            Date.now() - start,
-            "ms"
-          )
+          console.log(`\n[Firebase Source] Fetching data for ${type}...`)
         }
 
-        const val = snapshot.val()
+        query(db.ref(path)).once('value', (snapshot) => {
+          if (!quiet) {
+            console.log(
+              `\n[Firebase Source] Data for ${type} loaded in`,
+              Date.now() - start,
+              'ms'
+            )
+          }
 
-        Object.keys(val).forEach(key => {
-          const node = map(Object.assign({}, val[key]))
+          const val = snapshot.val()
 
-          const contentDigest = crypto
-            .createHash(`md5`)
-            .update(JSON.stringify(node))
-            .digest(`hex`)
+          Object.keys(val).forEach((key) => {
+            const node = map(Object.assign({}, val[key]))
 
-          createNode(
-            Object.assign(node, {
-              id: key,
-              parent: "root",
-              children: [],
-              internal: {
-                type: type,
-                contentDigest: contentDigest
-              }
-            })
-          )
+            const contentDigest = crypto
+              .createHash(`md5`)
+              .update(JSON.stringify(node))
+              .digest(`hex`)
+
+            createNode(
+              Object.assign(node, {
+                id: key,
+                parent: 'root',
+                children: [],
+                internal: {
+                  type: type,
+                  contentDigest: contentDigest,
+                },
+              })
+            )
+          })
+          done()
         })
-        done()
-      })
-    },
-    error => {
-      throw new Error(error)
-    }
-  )
+      },
+      (error) => {
+        throw new Error(error)
+      }
+    )
+  })
 }

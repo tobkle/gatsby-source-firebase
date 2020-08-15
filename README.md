@@ -1,6 +1,16 @@
-# Gatsby Firebase Source
+# Gatsby Firebase CMS Source
 
 Quick and dirty firebase source for Gatsby. Allows you to query your firebase data right into your statically generated pages with Gatsby.
+
+Additionally, it creates the tables automatically, if you have a table 'contentType' containing the content types, and a table 'contents', which contains the records for the types.
+
+```json
+{
+  "contentTypes": "contentTypes", // table containing the content types
+  "contents": "contents", // table containing the content types`s contents
+  "limit": 100 // number of records to read
+}
+```
 
 ![screenshot](./screenshot.png)
 
@@ -11,7 +21,6 @@ Quick and dirty firebase source for Gatsby. Allows you to query your firebase da
 2. Place that private key .json file somewhere in your gatsby project (the root is fine).
 
 3. Configure gatsby-config.js
-
 
 ```js
 // the plugin options are:

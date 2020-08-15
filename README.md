@@ -7,8 +7,7 @@ Additionally, it creates the tables automatically, if you have a table 'contentT
 ```json
 {
   "contentTypes": "contentTypes", // table containing the content types
-  "contents": "contents", // table containing the content types`s contents
-  "limit": 100 // number of records to read
+  "contents": "contents" // table containing the content types`s contents
 }
 ```
 

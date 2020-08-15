@@ -8,7 +8,6 @@ exports.sourceNodes = (
     databaseURL,
     contentTypes = 'contentTypes',
     contents = 'contents',
-    limit = 100,
     types,
     quiet = false,
   },
@@ -41,10 +40,6 @@ exports.sourceNodes = (
       types.push({
         type: `${contentType.name}`,
         path: `/${contents}/${contentType.uid}`,
-        query: (ref) => ref.limitToLast(limit),
-        map: (node) => {
-          return node
-        },
       })
 
       console.log(JSON.stringify(types, null, 2))
